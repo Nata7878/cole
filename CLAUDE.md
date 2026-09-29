@@ -14,8 +14,10 @@
 - `temas.js` — **весь контент**. Новая тема = новый блок в `TEMAS`:
   - `tipo: "conj"` — спряжения: `pronombres`, `tiempos` (`cuando`, `nombre`, `formas` по порядку местоимений), `acentos` — кнопки букв с ударением.
   - `tipo: "vocab"` — слова: `items: [["вопрос", "ответ"], ...]`.
-  - Новый предмет или триместр — в `MATERIAS`.
+  - `tipo: "mult"` — таблица умножения: `tablas` (какие таблицы), `por` (множители, сейчас ×2…×9 — без ×1 и ×10), `elegir: true` — галочки «¿Qué tablas?», любая комбинация (тема «Mezcla»).
+  - Новый предмет или триместр — в `MATERIAS`. У предмета можно задать свои `secciones` (у Matemáticas — `calc` «Cálculo») и `premio: "coches"`.
 - `jugadores.js` + `img/j/` — фото футболистов сборной Испании (Wikimedia Commons, CC BY-SA 4.0).
+- `coches.js` + `img/c/` — фото спорткаров, награда в Matemáticas вместо футболистов (Wikimedia Commons).
 - `creditos.html` — авторы фото. Новое фото = новая строка с автором и лицензией.
 - `estilo.css` — общие цвета и шрифты (красный/жёлтый сборной, светлая и тёмная тема).
 - `manifest.webmanifest`, `img/icono-*.png` — иконка «COLE» для рабочего стола телефона.

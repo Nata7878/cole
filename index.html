@@ -88,6 +88,7 @@ function estado(t){
   return ["⚪", "Sin empezar"];
 }
 function tamano(t){
+  if (t.tipo === "mult") return t.elegir ? `Tablas del ${t.tablas[0]} al ${t.tablas.at(-1)} · tú eliges` : `${t.por.length} multiplicaciones · ×${t.por[0]} a ×${t.por.at(-1)}`;
   return t.tipo === "conj" ? `${t.tiempos.length * t.pronombres.length} formas · ${t.tiempos.map(x => x.cuando).join(" / ")}` : `${t.items.length} palabras`;
 }
 
@@ -110,7 +111,7 @@ function render(){
     ${m.periodos.map(p => `
       <section class="periodo">
         <h3>${p}<small>${temas.filter(t => t.periodo === p).length} temas</small></h3>
-        ${SECCIONES.map(s => {
+        ${SECCIONES.filter(s => (m.secciones || ["vocab", "gram"]).includes(s.id)).map(s => {
           const ts = temas.filter(t => t.periodo === p && t.seccion === s.id);
           return `<div class="sec"><h4>${s.ico} ${s.nombre}</h4>
             ${ts.length ? ts.map(t => { const [ico, txt] = estado(t); return `

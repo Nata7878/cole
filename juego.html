@@ -36,6 +36,9 @@ h1 em{font-style:normal;color:var(--roja)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{font:inherit;font-size:.85rem;font-weight:700;padding:8px 12px;border-radius:999px;border:2px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.chip.tick{display:inline-flex;align-items:center;gap:6px;font-size:1rem;padding:8px 14px}
+.chip.tick input{width:20px;height:20px;margin:0;accent-color:var(--roja)}
+.chip.tick:has(input:checked){border-color:var(--roja);background:color-mix(in srgb,var(--oro) 22%,var(--surface))}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 18px;display:flex;flex-direction:column;gap:16px}
 .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}
 .tense{color:var(--roja)}
@@ -63,6 +66,8 @@ h1 em{font-style:normal;color:var(--roja)}
 .goal .top{background:linear-gradient(#c60b1e 0 22%,#ffc400 22% 78%,#c60b1e 78%);padding:14px 10px}
 .goal .gol{font-family:var(--display);font-weight:900;font-size:3.4rem;line-height:1;color:#c60b1e}
 .goal img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;max-height:50vh}
+.goal.coches img{aspect-ratio:4/3;object-position:center}
+.gallery img[src*="/c/"]{object-position:center}
 .goal .name{font-family:var(--display);font-weight:900;font-size:1.7rem;text-transform:uppercase;margin:10px 12px 0}
 .goal .ans{color:var(--muted);margin:2px 12px 12px}
 .goal .btn{margin:0 16px 16px;width:calc(100% - 32px);justify-content:center}
@@ -118,6 +123,7 @@ h1 em{font-style:normal;color:var(--roja)}
 
 <script src="temas.js"></script>
 <script src="jugadores.js"></script>
+<script src="coches.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const read = k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } };
@@ -130,14 +136,28 @@ const TEMA = TEMAS.find(t => t.id === new URLSearchParams(location.search).get("
 if (!TEMA) location.replace("index.html");
 const MAT = MATERIAS.find(m => m.id === TEMA.materia);
 const SEC = SECCIONES.find(s => s.id === TEMA.seccion);
+// Premio por cada acierto: jugadores de la selección o, en Matemáticas, coches deportivos
+const PREMIOS = MAT.premio === "coches" && typeof COCHES !== "undefined" && COCHES.length ? COCHES : JUGADORES;
+if (PREMIOS !== JUGADORES) $("goal").classList.add("coches");
 document.title = "Cole · " + TEMA.titulo;
 $("crumb").textContent = `${MAT.nombre} · ${TEMA.periodo} · ${SEC.nombre}`;
 $("title").textContent = TEMA.titulo;
 
 let ans = "pick", filtro = "all", queue = [], total = 0, goals = 0, fails = 0, cur = null, scorers = [], pIdx = 0;
+let sel = new Set(TEMA.tablas || []);
+if (TEMA.elegir){ const s = (read("cole:tablas:" + TEMA.id) || []).filter(n => sel.has(n)); if (s.length) sel = new Set(s); }
 
 // Preguntas: {when, label, prompt, answer, pool(opciones parecidas)}
 function preguntas(){
+  if (TEMA.tipo === "mult"){
+    return TEMA.tablas.filter(a => sel.has(a)).flatMap(a => TEMA.por.map(b => {
+      const r = a * b;
+      // Opciones falsas parecidas: la tabla de al lado, el número vecino…
+      const pool = [...new Set([a * (b - 1), a * (b + 1), (a - 1) * b, (a + 1) * b, r - 1, r + 1, r + a, r - a])]
+        .filter(x => x > 0 && x !== r).map(String);
+      return { when: null, label: "Tabla del " + a, prompt: `${a} × ${b} = ?`, pre: "", answer: String(r), full: `${a} × ${b} = ${r}`, pool };
+    }));
+  }
   if (TEMA.tipo === "conj"){
     const ts = TEMA.tiempos.filter(t => filtro === "all" || t.id === filtro);
     return ts.flatMap(t => TEMA.pronombres.map((p, k) => {
@@ -150,7 +170,22 @@ function preguntas(){
   return TEMA.items.map(([q, a]) => ({ when: null, label: SEC.nombre, prompt: q, pre: "", answer: a, pool: all }));
 }
 
+// Casillas de tablas (tema "Mezcla"): se puede marcar cualquier combinación, siempre al menos una
+function tablasUI(){
+  const todas = sel.size === TEMA.tablas.length;
+  $("tiempos").innerHTML = `<h2 class="lbl" id="t-h">¿Qué tablas?</h2><div class="chips" role="group" aria-labelledby="t-h">
+    ${TEMA.tablas.map(n => `<label class="chip tick"><input type="checkbox" data-n="${n}"${sel.has(n) ? " checked" : ""}> Tabla del ${n}</label>`).join("")}
+    <button class="chip" id="todas" aria-pressed="${todas}">Todas</button></div>`;
+  document.querySelectorAll(".tick input").forEach(c => c.onchange = () => {
+    const n = +c.dataset.n;
+    if (c.checked) sel.add(n); else if (sel.size > 1) sel.delete(n); else { c.checked = true; return; }
+    write("cole:tablas:" + TEMA.id, [...sel]); tablasUI(); start();
+  });
+  $("todas").onclick = () => { sel = new Set(TEMA.tablas); write("cole:tablas:" + TEMA.id, [...sel]); tablasUI(); start(); };
+}
+
 function tiemposUI(){
+  if (TEMA.tipo === "mult" && TEMA.elegir) return tablasUI();
   if (TEMA.tipo !== "conj" || TEMA.tiempos.length < 2) { $("tiempos").innerHTML = ""; return; }
   const b = (id, txt) => `<button class="chip" data-f="${id}" aria-pressed="${filtro === id}">${txt}</button>`;
   $("tiempos").innerHTML = `<h2 class="lbl" id="t-h">Tiempo</h2><div class="chips" role="group" aria-labelledby="t-h">
@@ -161,13 +196,13 @@ function tiemposUI(){
 function guardar(fin){
   const p = read("cole:" + TEMA.id) || {};
   p.empezado = true;
-  if (fin && filtro === "all"){ p.hecho = true; p.mejorFallos = Math.min(p.mejorFallos ?? Infinity, fails); }
+  if (fin && filtro === "all" && sel.size === (TEMA.tablas || []).length){ p.hecho = true; p.mejorFallos = Math.min(p.mejorFallos ?? Infinity, fails); }
   write("cole:" + TEMA.id, p);
 }
 
 function start(){
   queue = shuffle(preguntas()); total = queue.length; goals = 0; fails = 0; scorers = [];
-  score(); pIdx = Math.random() * JUGADORES.length | 0; next();
+  score(); pIdx = Math.random() * PREMIOS.length | 0; next();
 }
 function options(c){
   return shuffle([c.answer, ...shuffle(c.pool.filter(x => x !== c.answer)).slice(0, 3)]);
@@ -177,7 +212,7 @@ function next(){
   cur = queue.shift();
   const keys = [...(TEMA.acentos || "")].map(c => `<button class="key" type="button" data-c="${c}">${c}</button>`).join("");
   const writeUI = `<form class="ans-row" id="f" autocomplete="off">
-      <input class="inp" id="inp" aria-label="Respuesta" placeholder="…" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input class="inp" id="inp" aria-label="Respuesta" placeholder="…" autocapitalize="off" autocorrect="off" spellcheck="false"${TEMA.tipo === "mult" ? ' inputmode="numeric" pattern="[0-9]*"' : ""}>
       <button class="btn" type="submit">¡Chuta!</button></form>
     ${keys ? `<div class="keys" aria-label="Letras con acento">${keys}</div>` : ""}`;
   const pickUI = `<div class="opts">${options(cur).map((o, k) => `<button class="opt" id="o${k}" data-v="${o}">${cur.pre ? cur.pre + " " : ""}${o}</button>`).join("")}</div>`;
@@ -202,14 +237,14 @@ function next(){
 function answer(raw, btn){
   let v = norm(raw);
   const pr = norm(cur.pre); if (pr && v.startsWith(pr + " ")) v = v.slice(pr.length + 1);
-  const right = cur.answer, full = `${cur.pre ? cur.pre + " " : ""}${right}`, ok = v === norm(right);
+  const right = cur.answer, full = cur.full || `${cur.pre ? cur.pre + " " : ""}${right}`, ok = v === norm(right);
   document.querySelectorAll("#card input,#card button").forEach(x => x.disabled = true);
   if (btn){ document.querySelectorAll(".opt").forEach(x => { if (x.dataset.v === right) x.classList.add("good") }); if (!ok) btn.classList.add("bad"); }
   else $("inp").classList.add(ok ? "good" : "bad");
   guardar(false);
   if (ok){
     goals++; score();
-    const pl = JUGADORES[pIdx++ % JUGADORES.length]; scorers.push(pl);
+    const pl = PREMIOS[pIdx++ % PREMIOS.length]; scorers.push(pl);
     $("gimg").src = pl.img; $("gimg").alt = pl.n; $("gname").textContent = pl.n;
     $("gans").textContent = `${cur.when ? cur.when + " · " : ""}${full}`;
     $("goal").hidden = false; $("gnext").focus();
