@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cole · Plan del curso</title>
+<meta name="theme-color" content="#c60b1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="img/icono-192.png">
+<link rel="apple-touch-icon" href="img/icono-180.png">
+<meta name="apple-mobile-web-app-title" content="Cole">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Nunito+Sans:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="estilo.css">
+<style>
+/* Layout: Toddle-like outline on the left (subjects → terms), the chosen subject's plan on the right; on phones the outline becomes tabs */
+.app{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px;align-items:start}
+.top{grid-column:1/-1;display:flex;flex-direction:column;gap:10px}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(2.2rem,7vw,3rem);line-height:.95;margin:0;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--roja)}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.tree{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.tree button{font:inherit;width:100%;text-align:left;background:transparent;border:0;border-radius:10px;padding:10px 12px;color:var(--fg);cursor:pointer;font-weight:800;text-transform:uppercase;letter-spacing:.02em;display:flex;justify-content:space-between;gap:8px}
+.tree button:hover{background:color-mix(in srgb,var(--line) 60%,transparent)}
+.tree button[aria-current="true"]{background:var(--surface);box-shadow:inset 4px 0 0 var(--roja)}
+.tree .cnt{font-weight:700;color:var(--muted);text-transform:none;font-variant-numeric:tabular-nums}
+.tree .sub{font-weight:700;text-transform:none;color:var(--muted);padding:4px 12px 4px 28px;font-size:.9rem}
+main{min-width:0;display:flex;flex-direction:column;gap:20px}
+.mh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mh h2{font-family:var(--display);font-weight:900;font-size:2.2rem;margin:0;text-transform:uppercase;line-height:1}
+.summary{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.periodo{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.periodo>h3{margin:0;padding:14px 18px;font-size:1.1rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.periodo>h3 small{color:var(--muted);font-weight:700}
+.sec{padding:12px 18px 16px;display:flex;flex-direction:column;gap:8px}
+.sec+.sec{border-top:1px dashed var(--line)}
+.sec h4{margin:0;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tema{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;border:2px solid var(--line);text-decoration:none;color:var(--fg);background:var(--bg)}
+.tema:hover{border-color:var(--navy)}
+.tema .st{font-size:1.4rem;line-height:1}
+.tema .t{font-weight:800;font-size:1.05rem}
+.tema .m{font-size:.85rem;color:var(--muted)}
+.tema .go{font-family:var(--display);font-weight:900;text-transform:uppercase;color:var(--roja);font-size:1.1rem;letter-spacing:.04em}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr);gap:16px}
+  .side{position:static}
+  .side .lbl{display:none}
+  .tree{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .tree li{flex:0 0 auto}
+  .tree .sub{display:none}
+  .tree button{border:2px solid var(--line);white-space:nowrap}
+  .tree button[aria-current="true"]{box-shadow:none;border-color:var(--roja)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="flag" aria-hidden="true"></div>
+    <h1>Plan del <em>curso</em></h1>
+  </div>
+
+  <nav class="side" aria-label="Asignaturas">
+    <h2 class="lbl">Esquema general</h2>
+    <ul class="tree" id="tree"></ul>
+  </nav>
+
+  <main id="main"></main>
+</div>
+
+<div class="app" style="padding-block:0 32px">
+  <p class="foot" style="grid-column:1/-1;margin:0"><a href="creditos.html">Créditos de las fotos</a></p>
+</div>
+
+<script src="temas.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const read = k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } };
+const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} };
+const progreso = t => read("cole:" + t.id) || {};
+
+function estado(t){
+  const p = progreso(t);
+  if (p.hecho) return p.mejorFallos === 0 ? ["⭐", "Sin fallos"] : ["✅", `Terminado · mejor: ${p.mejorFallos} fallos`];
+  if (p.empezado) return ["🟡", "Empezado"];
+  return ["⚪", "Sin empezar"];
+}
+function tamano(t){
+  return t.tipo === "conj" ? `${t.tiempos.length * t.pronombres.length} formas · ${t.tiempos.map(x => x.cuando).join(" / ")}` : `${t.items.length} palabras`;
+}
+
+let actual = (location.hash.slice(1)) || read("cole:materia") || MATERIAS[0].id;
+if (!MATERIAS.some(m => m.id === actual)) actual = MATERIAS[0].id;
+
+function render(){
+  $("tree").innerHTML = MATERIAS.map(m => {
+    const n = TEMAS.filter(t => t.materia === m.id).length;
+    return `<li><button data-m="${m.id}" aria-current="${m.id === actual}"><span>${m.nombre}</span><span class="cnt">${n}</span></button></li>` +
+      m.periodos.map(p => `<li class="sub">${p}</li>`).join("");
+  }).join("");
+  document.querySelectorAll("#tree button").forEach(b => b.onclick = () => { actual = b.dataset.m; write("cole:materia", actual); history.replaceState(null, "", "#" + actual); render(); });
+
+  const m = MATERIAS.find(x => x.id === actual);
+  const temas = TEMAS.filter(t => t.materia === m.id);
+  const hechos = temas.filter(t => progreso(t).hecho).length;
+  $("main").innerHTML = `
+    <div class="mh"><h2>${m.nombre}</h2><span class="summary">${hechos} de ${temas.length} temas terminados</span></div>
+    ${m.periodos.map(p => `
+      <section class="periodo">
+        <h3>${p}<small>${temas.filter(t => t.periodo === p).length} temas</small></h3>
+        ${SECCIONES.map(s => {
+          const ts = temas.filter(t => t.periodo === p && t.seccion === s.id);
+          return `<div class="sec"><h4>${s.ico} ${s.nombre}</h4>
+            ${ts.length ? ts.map(t => { const [ico, txt] = estado(t); return `
+              <a class="tema" href="juego.html?t=${t.id}">
+                <span class="st" title="${txt}">${ico}</span>
+                <span><span class="t">${t.titulo}</span><br><span class="m">${tamano(t)} · ${txt}</span></span>
+                <span class="go">Jugar ›</span>
+              </a>`}).join("") : `<p class="empty">Todavía no hay temas.</p>`}
+          </div>`;
+        }).join("")}
+      </section>`).join("")}
+    <div class="legend"><span>⚪ Sin empezar</span><span>🟡 Empezado</span><span>✅ Terminado</span><span>⭐ Sin fallos</span></div>`;
+}
+render();
+window.addEventListener("pageshow", render);
+</script>
+</body>
+</html>

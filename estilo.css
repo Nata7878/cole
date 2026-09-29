@@ -1,0 +1,31 @@
+/* Estilo común: marcador de estadio, colores de la selección, tarjetas de tema */
+:root{
+  --bg:#f6f1e4; --surface:#ffffff; --fg:#1d1a24; --muted:#6b6275;
+  --roja:#c60b1e; --oro:#ffc400; --navy:#1b2a5a; --ok:#1f8a4c; --line:#e4dccb;
+  --board:#1b2a5a; --on-accent:#ffffff; --ink:#1d1a24;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14121a; --surface:#1f1c28; --fg:#f3eee4; --muted:#a79fb3;
+  --roja:#ff4d5e; --oro:#ffcf33; --navy:#9fb4ff; --ok:#4cd488; --line:#34303f;
+  --board:#0b1330; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14121a; --surface:#1f1c28; --fg:#f3eee4; --muted:#a79fb3;
+  --roja:#ff4d5e; --oro:#ffcf33; --navy:#9fb4ff; --ok:#4cd488; --line:#34303f;
+  --board:#0b1330; color-scheme:dark}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;margin:0;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
+a{color:var(--navy)}
+.flag{height:8px;border-radius:4px;background:linear-gradient(var(--roja) 0 25%,var(--oro) 25% 75%,var(--roja) 75%)}
+.lbl{font-family:var(--display);font-weight:900;font-size:1.1rem;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px;color:var(--muted)}
+.btn{font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 18px;background:var(--roja);color:var(--on-accent);cursor:pointer;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.alt{background:transparent;color:var(--fg);border:2px solid var(--line)}
+.btn:focus-visible,a:focus-visible,button:focus-visible{outline:3px solid var(--oro);outline-offset:2px}
+.foot{font-size:.8rem;color:var(--muted)}
